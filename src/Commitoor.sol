@@ -97,7 +97,7 @@ contract Commitoor {
             party = parties[i];
             if (msg.sender == party) partyInvolved = true;
 
-            if (i < orderBound && !(party < parties[i + i])) revert PartiesOutOfOrderError();
+            if (i < orderBound && !(party < parties[i + 1])) revert PartiesOutOfOrderError();
 
             _checkSignature(nonces[i], party, commitmentBlock, plaintextShadow, signatures[i]);
         }
