@@ -16,7 +16,8 @@ contract CommitoorTest is Test {
         commitoor = new Commitoor();
     }
 
-    function test_flow_2_commitoors() public {
+    function test_happyPathFlow_2_commitoors() public {
+        // can easily generalize to a `test_happyPathFlow_n_commitoors`, with the only difference being ordering of arrays w respect to ordering of signers
         uint256 numPlayers = 2;
         string[] memory seeds = new string[](numPlayers);
         seeds[0] = "hakuna";
@@ -28,7 +29,7 @@ contract CommitoorTest is Test {
             expectedSigners[1] = 0xbB86A0d281e4700ec33Ae7C8D32A214266348D70;
             for (uint256 i; i < seeds.length; ++i) {
                 signers[i] = _generateSignerFromSeed(seeds[i]);
-                //assertEq(signers[i], expectedSigners[i]);
+                assertEq(signers[i], expectedSigners[i]);
             }
         }
 
@@ -111,10 +112,10 @@ contract CommitoorTest is Test {
                 if (topics[j] == secretRevealedTopic) {
                     (bytes32 _commitment, address _revealer, uint256 _commitmentBlock, bytes memory _plaintext) =
                         abi.decode(logs[i].data, (bytes32, address, uint256, bytes));
-                    if (_commitment != commitment) break;
-                    if (_revealer != revealer) break;
-                    if (_commitmentBlock != commitmentBlock) break;
-                    if (keccak256(_plaintext) != keccak256(bytes(plaintext))) break;
+                    if (
+                        (_commitment != commitment) || (_revealer != revealer) || (_commitmentBlock != commitmentBlock)
+                            || (keccak256(_plaintext) != keccak256(bytes(plaintext)))
+                    ) break;
                     found = true;
                 }
             }

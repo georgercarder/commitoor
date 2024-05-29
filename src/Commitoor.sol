@@ -58,7 +58,6 @@ contract Commitoor {
         return _hashPlaintext(plaintext);
     }
 
-    // FIXME note it is likely the case need a final formatting of digest to include "Ethereum signed message".... will come out in the wash in tests
     function getSecretDigest(uint256 commitmentBlock, bytes32 plaintextShadow, uint256 nonce)
         external
         view
@@ -73,6 +72,7 @@ contract Commitoor {
 
     // mutating functions in order of workflow
 
+    // can be called by anyone
     function setCommitment(bytes32 commitment) external {
         if (commitments[commitment]) revert CommitmentExistsError();
         commitments[commitment] = true;
@@ -80,6 +80,8 @@ contract Commitoor {
         emit NewCommitment(commitment);
     }
 
+    // the caller must be one of the entries of the `parties` parameter
+    // the array parameters must be ordered with respect to the canonical ordering of the parties
     function revealSecret(
         address[] calldata parties,
         uint256[] calldata nonces,
@@ -102,6 +104,9 @@ contract Commitoor {
         if (!partyInvolved) revert CallerNotCommitoorError();
         bytes32 commitment = _getCommitment(signatures);
         commitments[commitment] = false;
+        // note it is not necessary to store the commitment as being committed in the past for the sake of future commitments
+        // this is because the nonces can only be used once and the commitments are a hash
+        // which cannot be recovered with any change in a well-formed preimage
 
         emit SecretRevealed(commitment, msg.sender, commitmentBlock, plaintext);
     }
