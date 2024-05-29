@@ -9,8 +9,9 @@ const provider = ethers.getDefaultProvider(network);
 
 function generateSignerFromSeed(seed) {
     const signer = _generateSignerFromSeed(seed);
-    console.log(signer.address); // DEBUG
-    // TODO encode address and pass to stdout lol
+    const encoder = ethers.AbiCoder.defaultAbiCoder();
+    const encoded = encoder.encode(["address"], [signer.address]);
+    console.log(encoded); // stdout for the ffi call of forge test
 }
 
 function _generateSignerFromSeed(seed) {
@@ -54,6 +55,9 @@ if (action === "generateSignerFromSeed") {
     const message = args.message;
     checkArg(message, 'message');
     signMessage(seed, message);
+} else {
+    console.log("invalid action");
+    process.exit(1);
 }
 
 function checkArg(arg, argName) {
