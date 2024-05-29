@@ -5,10 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {Commitoor} from "../src/Commitoor.sol";
 
 contract CommitoorTest is Test {
+    function setUp() public {}
 
-    function setUp() public {
-    }
-
-    function test_Increment() public {
-    }
+    function test_Increment() public {}
 }
