@@ -33,7 +33,18 @@ function _signMessage(seed, message) {
     const signer = _generateSignerFromSeed(seed);
     checkMessageFormat(message);
     message = '0x'+message;
-    return signer.signMessage(message);
+    const bMessage = ethers.getBytes(message);
+    return signer.signMessage(bMessage);
+}
+
+function getBytes(hex) {
+    if (hex.length % 2 == 1) throw Error("invalid hex");
+    if (hex.length == 2) return [0x0];
+    const ret = [];
+    for (var i = 2; i < hex.length; i += 2) {
+        ret.push(parseInt('0x'+hex.substring(i, i+2)));
+    }
+    return ret;
 }
 
 function checkMessageFormat(message) {

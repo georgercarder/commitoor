@@ -141,8 +141,8 @@ contract Commitoor {
         if (BitMaps.get(bm, nonce)) revert NonceUsedError();
         BitMaps.set(bm, nonce);
 
-        bytes32 digest = _getSecretDigest(commitmentBlock, plaintextShadow, nonce);
-        if (ECDSA.recover(digest, signature) != account) revert InvalidSignatureError();
+        bytes32 digest = ECDSA.toEthSignedMessageHash(_getSecretDigest(commitmentBlock, plaintextShadow, nonce));
+        if (ECDSA.recoverCalldata(digest, signature) != account) revert InvalidSignatureError();
     }
 
     function _getCommitment(bytes[] calldata signatures) private pure returns (bytes32) {
