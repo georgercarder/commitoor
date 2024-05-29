@@ -66,6 +66,8 @@ contract Commitoor {
         return _getSecretDigest(commitmentBlock, plaintextShadow, nonce);
     }
 
+    // the array of signatures must be ordered with respect to the canonical ordering of the signers 
+    // it's on the caller to have performed this ordering as it'll be cumbersome (requiring a trie) to do in contract
     function getCommitment(bytes[] calldata signatures) external pure returns (bytes32) {
         // note: since the signatures are formed with arbitrary choice of nonce by signers, there is no need for additional salt
         return _getCommitment(signatures);
