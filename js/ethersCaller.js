@@ -11,7 +11,8 @@ function generateSignerFromSeed(seed) {
     const signer = _generateSignerFromSeed(seed);
     const encoder = ethers.AbiCoder.defaultAbiCoder();
     const encoded = encoder.encode(["address"], [signer.address]);
-    console.log(encoded); // stdout for the ffi call of forge test
+    console.log(encoded);
+    // stdout for the ffi call of forge test
 }
 
 function _generateSignerFromSeed(seed) {
@@ -21,8 +22,10 @@ function _generateSignerFromSeed(seed) {
 
 async function signMessage(seed, message) {
     const signedMessage = await _signMessage(seed, message);
-    console.log(signedMessage);
-    // TODO encode signedMessage and pass to stdout lol
+    const encoder = ethers.AbiCoder.defaultAbiCoder();
+    const encoded = encoder.encode(["bytes"], [signedMessage]);
+    console.log(encoded);
+    // stdout for the ffi call of forge test
 }
 
 function _signMessage(seed, message) {
