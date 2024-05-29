@@ -60,6 +60,7 @@ contract Commitoor {
         return _hashPlaintext(plaintext);
     }
 
+    // FIXME note it is likely the case need a final formatting of digest to include "Ethereum signed message".... will come out in the wash in tests
     function getSecretDigest(uint256 commitmentBlock, bytes32 plaintextShadow, uint256 nonce)
         external
         view
