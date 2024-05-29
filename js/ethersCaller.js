@@ -48,9 +48,14 @@ function getBytes(hex) {
 }
 
 function checkMessageFormat(message) {
-    const msgCopy = (' ' + message).slice(1);
-    if (msgCopy.replaceAll(/[0-9]/g, "").replaceAll(/[a-f]/g, "").length > 0) {
+    if (typeof message !== 'string') {
         console.log("message must be hexString without '0x' prefix"); 
+        // since yargs likes to parse 0x prefixed hexstrings
+        process.exit(1);
+    }
+    const msgCopy = (' ' + message).slice(1);
+    if (msgCopy.length % 2 !== 0 || msgCopy.replaceAll(/[0-9]/g, "").replaceAll(/[a-f]/g, "").length > 0) {
+        console.log("message must be hexString without '0x' prefix, and even length"); 
         // since yargs likes to parse 0x prefixed hexstrings
         process.exit(1);
     }
