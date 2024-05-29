@@ -54,7 +54,7 @@ contract Commitoor {
         return BitMaps.get(_nonces[account], nonce);
     }
 
-    function hashPlaintext(bytes calldata plaintext) external pure returns (bytes32) {
+    function hashPlaintext(bytes calldata plaintext) external pure returns (bytes32 plaintextShadow) {
         return _hashPlaintext(plaintext);
     }
 
@@ -66,7 +66,7 @@ contract Commitoor {
         return _getSecretDigest(commitmentBlock, plaintextShadow, nonce);
     }
 
-    // the array of signatures must be ordered with respect to the canonical ordering of the signers 
+    // the array of signatures must be ordered with respect to the canonical ordering of the signers
     // it's on the caller to have performed this ordering as it'll be cumbersome (requiring a trie) to do in contract
     function getCommitment(bytes[] calldata signatures) external pure returns (bytes32) {
         // note: since the signatures are formed with arbitrary choice of nonce by signers, there is no need for additional salt
@@ -96,16 +96,16 @@ contract Commitoor {
         bytes32 plaintextShadow = _hashPlaintext(plaintext);
         address party;
         bool partyInvolved;
-        unchecked{
-        for (uint256 i; i < parties.length; ++i) {
-            party = parties[i];
-            if (msg.sender == party) partyInvolved = true;
+        unchecked {
+            for (uint256 i; i < parties.length; ++i) {
+                party = parties[i];
+                if (msg.sender == party) partyInvolved = true;
 
-            if (i < orderBound && !(party < parties[i + 1])) revert PartiesOutOfOrderError();
+                if (i < orderBound && !(party < parties[i + 1])) revert PartiesOutOfOrderError();
 
-            _checkSignature(nonces[i], party, commitmentBlock, plaintextShadow, signatures[i]);
-        }
-        }//uc
+                _checkSignature(nonces[i], party, commitmentBlock, plaintextShadow, signatures[i]);
+            }
+        } //uc
         if (!partyInvolved) revert CallerNotCommitoorError();
         bytes32 commitment = _getCommitment(signatures);
         commitments[commitment] = false;
@@ -119,7 +119,7 @@ contract Commitoor {
     // private functions
 
     function _hashPlaintext(bytes calldata plaintext) private pure returns (bytes32) {
-        return keccak256(abi.encode(plaintext)); // TODO make lower level
+        return keccak256(abi.encode(plaintext));
     }
 
     function _getSecretDigest(uint256 commitmentBlock, bytes32 plaintextShadow, uint256 nonce)

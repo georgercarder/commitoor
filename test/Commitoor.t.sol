@@ -83,6 +83,44 @@ contract CommitoorTest is Test {
         }
     }
 
+    function _generateSignerFromSeed(string memory seed) private returns (address ret) {
+        string[] memory inputs = new string[](6);
+
+        inputs[0] = "node";
+        inputs[1] = "js/ethersCaller.js";
+        inputs[2] = "--action";
+        inputs[3] = "generateSignerFromSeed";
+        inputs[4] = "--seed";
+        inputs[5] = seed;
+
+        bytes memory res = vm.ffi(inputs);
+
+        (ret) = abi.decode(res, (address));
+    }
+
+    function _signMessage(string memory seed, bytes32 secretDigest) private returns (bytes memory ret) {
+        string[] memory inputs = new string[](8);
+
+        inputs[0] = "node";
+        inputs[1] = "js/ethersCaller.js";
+        inputs[2] = "--action";
+        inputs[3] = "signMessage";
+        inputs[4] = "--seed";
+        inputs[5] = seed;
+
+        inputs[6] = "--message";
+        bytes memory bHexString = bytes(Strings.toHexString(uint256(secretDigest), 32));
+        bytes memory bHexStringSans0x = new bytes(bHexString.length - 2);
+        for (uint256 i = 2; i < bHexString.length; ++i) {
+            bHexStringSans0x[i - 2] = bHexString[i];
+        }
+        inputs[7] = string(bHexStringSans0x);
+
+        bytes memory res = vm.ffi(inputs);
+
+        (ret) = abi.decode(res, (bytes));
+    }
+
     function _checkNewCommitmentLogs(Vm.Log[] memory logs, bytes32 commitment) private view {
         bool found;
         for (uint256 i; i < logs.length; ++i) {
@@ -121,43 +159,5 @@ contract CommitoorTest is Test {
             }
         }
         assertEq(found, true);
-    }
-
-    function _signMessage(string memory seed, bytes32 secretDigest) private returns (bytes memory ret) {
-        string[] memory inputs = new string[](8);
-
-        inputs[0] = "node";
-        inputs[1] = "js/ethersCaller.js";
-        inputs[2] = "--action";
-        inputs[3] = "signMessage";
-        inputs[4] = "--seed";
-        inputs[5] = seed;
-
-        inputs[6] = "--message";
-        bytes memory bHexString = bytes(Strings.toHexString(uint256(secretDigest), 32));
-        bytes memory bHexStringSans0x = new bytes(bHexString.length - 2);
-        for (uint256 i = 2; i < bHexString.length; ++i) {
-            bHexStringSans0x[i - 2] = bHexString[i];
-        }
-        inputs[7] = string(bHexStringSans0x);
-
-        bytes memory res = vm.ffi(inputs);
-
-        (ret) = abi.decode(res, (bytes));
-    }
-
-    function _generateSignerFromSeed(string memory seed) private returns (address ret) {
-        string[] memory inputs = new string[](6);
-
-        inputs[0] = "node";
-        inputs[1] = "js/ethersCaller.js";
-        inputs[2] = "--action";
-        inputs[3] = "generateSignerFromSeed";
-        inputs[4] = "--seed";
-        inputs[5] = seed;
-
-        bytes memory res = vm.ffi(inputs);
-
-        (ret) = abi.decode(res, (address));
     }
 }
