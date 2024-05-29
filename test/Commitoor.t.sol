@@ -9,6 +9,7 @@ import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 contract CommitoorTest is Test {
     Commitoor commitoor;
 
+    bytes32 newCommitmentTopic = keccak256("NewCommitment(bytes32)");
     bytes32 secretRevealedTopic = keccak256("SecretRevealed(bytes32,address,uint256,bytes)");
 
     function setUp() public {
@@ -53,11 +54,15 @@ contract CommitoorTest is Test {
         bytes32 commitment = commitoor.getCommitment(signatures);
         assertEq(commitment != bytes32(0x0), true); // checking for dumb impl mistakes
 
+        Vm.Log[] memory logs;
         {
             address anyone = address(123);
 
+            vm.recordLogs();
             vm.prank(anyone); // can even go as far as to not leak ANY info about this secret or even whom is involved!!
             commitoor.setCommitment(commitment);
+            logs = vm.getRecordedLogs();
+            _checkNewCommitmentLogs(logs, commitment);
         }
 
         assertEq(commitoor.commitments(commitment), true);
@@ -67,7 +72,7 @@ contract CommitoorTest is Test {
         vm.prank(signers[0]); // without loss of generality
         commitoor.revealSecret(signers, noncesToUse, commitmentBlock, bytes(plaintext), signatures);
 
-        Vm.Log[] memory logs = vm.getRecordedLogs();
+        logs = vm.getRecordedLogs();
 
         _checkSecretRevealedLogs(logs, commitment, signers[0], commitmentBlock, plaintext);
 
@@ -77,7 +82,28 @@ contract CommitoorTest is Test {
         }
     }
 
-    function _checkSecretRevealedLogs(Vm.Log[] memory logs, bytes32 commitment, address revealer, uint256 commitmentBlock, string memory plaintext) private {
+    function _checkNewCommitmentLogs(Vm.Log[] memory logs, bytes32 commitment) private view {
+        bool found;
+        for (uint256 i; i < logs.length; ++i) {
+            bytes32[] memory topics = logs[i].topics;
+            for (uint256 j; j < topics.length; ++j) {
+                if (topics[j] == newCommitmentTopic) {
+                    (bytes32 _commitment) = abi.decode(logs[i].data, (bytes32));
+                    if (_commitment != commitment) break;
+                    found = true;
+                }
+            }
+        }
+        assertEq(found, true);
+    }
+
+    function _checkSecretRevealedLogs(
+        Vm.Log[] memory logs,
+        bytes32 commitment,
+        address revealer,
+        uint256 commitmentBlock,
+        string memory plaintext
+    ) private view {
         bool found;
         for (uint256 i; i < logs.length; ++i) {
             bytes32[] memory topics = logs[i].topics;
