@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console} from "forge-std/Test.sol";
+import "forge-std/Test.sol";
 import {Commitoor} from "../src/Commitoor.sol";
 
 import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 
 contract CommitoorTest is Test {
     Commitoor commitoor;
+
+    bytes32 secretRevealedTopic = keccak256("SecretRevealed(bytes32,address,uint256,bytes)");
 
     function setUp() public {
         commitoor = new Commitoor();
@@ -29,7 +31,7 @@ contract CommitoorTest is Test {
             }
         }
 
-        string memory plainText = "eat at Don's";
+        string memory plaintext = "eat at Don's";
 
         uint256[] memory noncesToUse = new uint256[](numPlayers);
         noncesToUse[0] = 420;
@@ -37,7 +39,7 @@ contract CommitoorTest is Test {
         for (uint256 i; i < noncesToUse.length; ++i) {
             assertEq(commitoor.nonceUsed(signers[i], noncesToUse[i]), false);
         }
-        bytes32 plaintextShadow = commitoor.hashPlaintext(bytes(plainText));
+        bytes32 plaintextShadow = commitoor.hashPlaintext(bytes(plaintext));
         assertEq(plaintextShadow != bytes32(0x0), true); // checking for dumb impl mistakes
 
         uint256 commitmentBlock = block.number;
@@ -51,18 +53,43 @@ contract CommitoorTest is Test {
         bytes32 commitment = commitoor.getCommitment(signatures);
         assertEq(commitment != bytes32(0x0), true); // checking for dumb impl mistakes
 
-        address anyone = address(123);
+        {
+            address anyone = address(123);
 
-        vm.prank(anyone); // can even go as far as to not leak ANY info about this secret or even whom is involved!!
-        commitoor.setCommitment(commitment);
+            vm.prank(anyone); // can even go as far as to not leak ANY info about this secret or even whom is involved!!
+            commitoor.setCommitment(commitment);
+        }
 
         assertEq(commitoor.commitments(commitment), true);
 
         // just so happens that the signers, and thus all arrs are in order
+        vm.recordLogs();
         vm.prank(signers[0]); // without loss of generality
-        commitoor.revealSecret(signers, noncesToUse, commitmentBlock, bytes(plainText), signatures);
+        commitoor.revealSecret(signers, noncesToUse, commitmentBlock, bytes(plaintext), signatures);
+
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        bool found;
+        for (uint256 i; i < logs.length; ++i) {
+            bytes32[] memory topics = logs[i].topics;
+            for (uint256 j; j < topics.length; ++j) {
+                if (topics[j] == secretRevealedTopic) {
+                    (bytes32 _commitment, address _revealer, uint256 _commitmentBlock, bytes memory _plaintext) =
+                        abi.decode(logs[i].data, (bytes32, address, uint256, bytes));
+                    if (_commitment != commitment) break;
+                    if (_revealer != signers[0]) break;
+                    if (_commitmentBlock != commitmentBlock) break;
+                    if (keccak256(bytes(plaintext)) != keccak256(_plaintext)) break;
+                    found = true;
+                }
+            }
+        }
+        assertEq(found, true);
 
         assertEq(commitoor.commitments(commitment), false);
+        for (uint256 i; i < noncesToUse.length; ++i) {
+            assertEq(commitoor.nonceUsed(signers[i], noncesToUse[i]), true);
+        }
     }
 
     function _signMessage(string memory seed, bytes32 secretDigest) private returns (bytes memory ret) {

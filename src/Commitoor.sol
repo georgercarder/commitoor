@@ -20,11 +20,9 @@ contract Commitoor {
 
     mapping(address => BitMaps.BitMap) private _nonces;
 
-    event NewCommitment(bytes32 indexed commitment);
+    event NewCommitment(bytes32 commitment);
 
-    event SecretRevealed(
-        bytes32 indexed commitment, address indexed revealer, uint256 indexed commitmentBlock, bytes plaintext
-    );
+    event SecretRevealed(bytes32 commitment, address revealer, uint256 commitmentBlock, bytes plaintext);
 
     struct Commitment {
         uint256 commitmentBlock;
