@@ -67,6 +67,7 @@ contract Commitoor {
     }
 
     function getCommitment(bytes[] calldata signatures) external pure returns (bytes32) {
+        // note: since the signatures are formed with arbitrary choice of nonce by signers, there is no need for additional salt
         return _getCommitment(signatures);
     }
 
@@ -93,6 +94,7 @@ contract Commitoor {
         bytes32 plaintextShadow = _hashPlaintext(plaintext);
         address party;
         bool partyInvolved;
+        unchecked{
         for (uint256 i; i < parties.length; ++i) {
             party = parties[i];
             if (msg.sender == party) partyInvolved = true;
@@ -101,6 +103,7 @@ contract Commitoor {
 
             _checkSignature(nonces[i], party, commitmentBlock, plaintextShadow, signatures[i]);
         }
+        }//uc
         if (!partyInvolved) revert CallerNotCommitoorError();
         bytes32 commitment = _getCommitment(signatures);
         commitments[commitment] = false;
