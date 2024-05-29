@@ -69,6 +69,15 @@ contract CommitoorTest is Test {
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
 
+        _checkSecretRevealedLogs(logs, commitment, signers[0], commitmentBlock, plaintext);
+
+        assertEq(commitoor.commitments(commitment), false);
+        for (uint256 i; i < noncesToUse.length; ++i) {
+            assertEq(commitoor.nonceUsed(signers[i], noncesToUse[i]), true);
+        }
+    }
+
+    function _checkSecretRevealedLogs(Vm.Log[] memory logs, bytes32 commitment, address revealer, uint256 commitmentBlock, string memory plaintext) private {
         bool found;
         for (uint256 i; i < logs.length; ++i) {
             bytes32[] memory topics = logs[i].topics;
@@ -77,19 +86,14 @@ contract CommitoorTest is Test {
                     (bytes32 _commitment, address _revealer, uint256 _commitmentBlock, bytes memory _plaintext) =
                         abi.decode(logs[i].data, (bytes32, address, uint256, bytes));
                     if (_commitment != commitment) break;
-                    if (_revealer != signers[0]) break;
+                    if (_revealer != revealer) break;
                     if (_commitmentBlock != commitmentBlock) break;
-                    if (keccak256(bytes(plaintext)) != keccak256(_plaintext)) break;
+                    if (keccak256(_plaintext) != keccak256(bytes(plaintext))) break;
                     found = true;
                 }
             }
         }
         assertEq(found, true);
-
-        assertEq(commitoor.commitments(commitment), false);
-        for (uint256 i; i < noncesToUse.length; ++i) {
-            assertEq(commitoor.nonceUsed(signers[i], noncesToUse[i]), true);
-        }
     }
 
     function _signMessage(string memory seed, bytes32 secretDigest) private returns (bytes memory ret) {
