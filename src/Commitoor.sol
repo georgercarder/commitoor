@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-
 import {BitMaps} from "lib/openzeppelin-contracts/contracts/utils/structs/BitMaps.sol";
 
 import {ECDSA} from "lib/solady/src/utils/ECDSA.sol";
@@ -23,7 +22,9 @@ contract Commitoor {
 
     event NewCommitment(bytes32 indexed commitment);
 
-    event SecretRevealed(bytes32 indexed commitment, address indexed revealer, uint256 indexed commitmentBlock, bytes plaintext);
+    event SecretRevealed(
+        bytes32 indexed commitment, address indexed revealer, uint256 indexed commitmentBlock, bytes plaintext
+    );
 
     struct Commitment {
         uint256 commitmentBlock;
@@ -49,9 +50,29 @@ contract Commitoor {
         COMMITMENT_TYPEHASH = keccak256("Commitment(uint256 commitmentBlock,bytes32 plaintextShadow,uint256 nonce)");
     }
 
+    // lens functions, in order of setup-phase workflow
+
     function nonceUsed(address account, uint256 nonce) external view returns (bool) {
         return BitMaps.get(_nonces[account], nonce);
     }
+
+    function hashPlaintext(bytes calldata plaintext) external pure returns (bytes32) {
+        return _hashPlaintext(plaintext);
+    }
+
+    function getSecretDigest(uint256 commitmentBlock, bytes32 plaintextShadow, uint256 nonce)
+        external
+        view
+        returns (bytes32)
+    {
+        return _getSecretDigest(commitmentBlock, plaintextShadow, nonce);
+    }
+
+    function getCommitment(bytes[] calldata signatures) external pure returns (bytes32) {
+        return _getCommitment(signatures);
+    }
+
+    // mutating functions in order of workflow
 
     function setCommitment(bytes32 commitment) external {
         if (commitments[commitment]) revert CommitmentExistsError();
@@ -86,20 +107,17 @@ contract Commitoor {
         emit SecretRevealed(commitment, msg.sender, commitmentBlock, plaintext);
     }
 
-    function _getCommitment(bytes[] calldata signatures) private pure returns(bytes32) {
-        return keccak256(abi.encode(signatures));
+    // private functions
+
+    function _hashPlaintext(bytes calldata plaintext) private pure returns (bytes32) {
+        return keccak256(abi.encode(plaintext)); // TODO make lower level
     }
 
-    function _checkSignature(uint256 nonce, address account, uint256 commitmentBlock, bytes32 plaintextShadow, bytes calldata signature) private {
-          BitMaps.BitMap storage bm = _nonces[account];
-          if (BitMaps.get(bm, nonce)) revert NonceUsedError();
-          BitMaps.set(bm, nonce);
-
-          bytes32 digest = _secretDigest(commitmentBlock, plaintextShadow, nonce);
-          if (ECDSA.recover(digest, signature) != account) revert InvalidSignatureError();
-    }
-
-    function _secretDigest(uint256 commitmentBlock, bytes32 plaintextShadow, uint256 nonce) private view returns (bytes32) {
+    function _getSecretDigest(uint256 commitmentBlock, bytes32 plaintextShadow, uint256 nonce)
+        private
+        view
+        returns (bytes32)
+    {
         return keccak256(
             abi.encodePacked(
                 abi.encodePacked(
@@ -111,7 +129,22 @@ contract Commitoor {
         );
     }
 
-    function _hashPlaintext(bytes calldata plaintext) private pure returns (bytes32) {
-        return keccak256(abi.encode(plaintext)); // TODO make lower level
+    function _checkSignature(
+        uint256 nonce,
+        address account,
+        uint256 commitmentBlock,
+        bytes32 plaintextShadow,
+        bytes calldata signature
+    ) private {
+        BitMaps.BitMap storage bm = _nonces[account];
+        if (BitMaps.get(bm, nonce)) revert NonceUsedError();
+        BitMaps.set(bm, nonce);
+
+        bytes32 digest = _getSecretDigest(commitmentBlock, plaintextShadow, nonce);
+        if (ECDSA.recover(digest, signature) != account) revert InvalidSignatureError();
+    }
+
+    function _getCommitment(bytes[] calldata signatures) private pure returns (bytes32) {
+        return keccak256(abi.encode(signatures));
     }
 }
