@@ -7,10 +7,12 @@ import {ECDSA} from "lib/solady/src/utils/ECDSA.sol";
 
 contract Commitoor {
     error CommitmentExistsError();
+    error LengthMismatchError();
     error PartiesOutOfOrderError();
     error NonceUsedError();
     error InvalidSignatureError();
     error CallerNotCommitoorError();
+    error CommitmentDNEError();
 
     string public version;
     bytes32 public immutable DOMAIN_SEPARATOR;
@@ -66,16 +68,28 @@ contract Commitoor {
         return _getSecretDigest(commitmentBlock, plaintextShadow, nonce);
     }
 
-    // the array of signatures must be ordered with respect to the canonical ordering of the signers
-    // it's on the caller to have performed this ordering as it'll be cumbersome (requiring a trie) to do in contract
+    /*
+       The array of signatures must be ordered with respect to the canonical ordering of the 
+       signers.
+       It's on the caller to have performed this ordering as it'll be cumbersome (requiring a 
+       trie) to do in contract.
+    **/
     function getCommitment(bytes[] calldata signatures) external pure returns (bytes32) {
-        // note: since the signatures are formed with arbitrary choice of nonce by signers, there is no need for additional salt
+        /*
+           note: It is likely the case that the signers will pick predictable nonces 
+           (succession etc.). Fortunately an ECDSA signature on known data cannot be predicted 
+           by an outside party, so there's no candidate signature array for an adversary to 
+           compare to commitments.
+        **/
         return _getCommitment(signatures);
     }
 
     // mutating functions in order of workflow
 
-    // can be called by anyone
+    /*
+      Can be called by anyone, so the privvy commitoor would make this tx using a burner 
+      address so as to not leak data of whom is involved.
+      **/
     function setCommitment(bytes32 commitment) external {
         if (commitments[commitment]) revert CommitmentExistsError();
         commitments[commitment] = true;
@@ -83,8 +97,11 @@ contract Commitoor {
         emit NewCommitment(commitment);
     }
 
-    // the caller must be one of the entries of the `parties` parameter
-    // the array parameters must be ordered with respect to the canonical ordering of the parties
+    /* 
+       The caller must be one of the entries of the `parties` parameter.
+       All array parameters must be ordered with respect to the canonical ordering of the 
+       parties.
+       **/
     function revealSecret(
         address[] calldata parties,
         uint256[] calldata nonces,
@@ -93,6 +110,11 @@ contract Commitoor {
         bytes[] calldata signatures
     ) external {
         uint256 orderBound = parties.length - 1;
+        if (parties.length != signatures.length) revert LengthMismatchError(); 
+        /* 
+           Check above prevents signatures.length from being larger than parties.. which would 
+           make the commitment not actually reflect the signatures.
+        **/
         bytes32 plaintextShadow = _hashPlaintext(plaintext);
         address party;
         bool partyInvolved;
@@ -108,10 +130,16 @@ contract Commitoor {
         } //uc
         if (!partyInvolved) revert CallerNotCommitoorError();
         bytes32 commitment = _getCommitment(signatures);
+        if (!commitments[commitment]) revert CommitmentDNEError();
         commitments[commitment] = false;
-        // note it is not necessary to store the commitment as being committed in the past for the sake of future commitments
-        // this is because the nonces can only be used once and the commitments are a hash
-        // which cannot be recovered with any change in a well-formed preimage
+        /*
+           note: It is not necessary to store the commitment as being committed in the past 
+           for the sake of future commitments.
+           This is because the nonces can only be used once and the commitments are a hash
+           which cannot be recovered with any change in a well-formed preimage.
+           So any subsequent setCommitment call with a former commitment would just be a 
+           single "noisy" (event) occurrence that can never be revealed.
+        **/
 
         emit SecretRevealed(commitment, msg.sender, commitmentBlock, plaintext);
     }
@@ -119,7 +147,7 @@ contract Commitoor {
     // private functions
 
     function _hashPlaintext(bytes calldata plaintext) private pure returns (bytes32) {
-        return keccak256(abi.encode(plaintext));
+        return keccak256(abi.encodePacked(plaintext));
     }
 
     function _getSecretDigest(uint256 commitmentBlock, bytes32 plaintextShadow, uint256 nonce)
