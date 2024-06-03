@@ -113,7 +113,7 @@ contract Commitoor {
         bytes[] calldata signatures
     ) external {
         uint256 orderBound = parties.length - 1;
-        if (parties.length != signatures.length) revert LengthMismatchError(); 
+        if (parties.length != signatures.length) revert LengthMismatchError();
         /* 
            Check above prevents signatures.length from being larger than parties.. which would 
            make the commitment not actually reflect the signatures.
