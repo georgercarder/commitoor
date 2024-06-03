@@ -1,66 +1,16 @@
-## Foundry
+## Commitoor
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+A smart contract allowing multiple parties to register a commitment of a signed message that signals an agreement on that message at a certain point in time, and later reveal this message onchain.
 
-Foundry consists of:
+To run demo, be sure the have the *latest* version of `forge foundry` [installed](https://book.getfoundry.sh/).
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+To run call `./run.sh`
 
-## Documentation
+From a high level, the `run.sh` script calls a `forge` test that interleaves its setup with system calls to a `node` script `js/ethersCaller.js` running through the "happy path" flow of
 
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+- signer account setup
+- message preparation (eip 712, eip 191)
+- message signing
+- commitment construction
+- commitment registration to contract (by "anyone")
+- secret reveal to contract (by one of the signers)

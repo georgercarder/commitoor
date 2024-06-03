@@ -101,6 +101,9 @@ contract Commitoor {
        The caller must be one of the entries of the `parties` parameter.
        All array parameters must be ordered with respect to the canonical ordering of the 
        parties.
+       note: the commitmentBlock is the "time signifier", doesn't necessarily need to be block. 
+       Can be any time signifier that signers agree to and is up to interpretation by the 
+       client.
        **/
     function revealSecret(
         address[] calldata parties,
