@@ -2,7 +2,9 @@
 
 A smart contract allowing multiple parties to register a commitment of a signed message that signals an agreement on that message at a certain point in time, and later reveal this message onchain.
 
-To run demo, be sure the have the *latest* version of `forge foundry` [installed](https://book.getfoundry.sh/).
+To run demo, be sure the have the *latest* version of `forge foundry` [installed](https://book.getfoundry.sh/), as well as nodejs.
+
+To build call `npm install`
 
 To run call `./run.sh`
 
